@@ -109,7 +109,8 @@ void TorchAsrModel::Reset() {
   cnn_cache_ = std::move(torch::zeros({0, 0, 0, 0}));
   encoder_outs_.clear();
   cached_feature_.clear();
-  model_->run_method("refresh_cache")
+  model_->run_method("reset_cache");
+  // VLOG(1) << "refresh rnnt cache";
 }
 
 void TorchAsrModel::ForwardEncoderFunc(
@@ -278,21 +279,25 @@ void TorchAsrModel::AttentionRescoring(
   }
 }
 
-void TorchAsrModel::RnntGreedySearch(
-  std::vector<int>* out_prob)
-  {
-    int length = encoder_outs_[encoder_outs_.size()-1].size()
-    int hidden_size = encoder_outs_[encoder_outs_.size()-1].size()
-    torch::Tensor encoder_o = torch::zeros({1, length, hidden_size}, torch::kFloat);
-    for (size_t i = 0; i < chunk_feats.size(); ++i) {
-      torch::Tensor row =
-          torch::from_blob(const_cast<float*>(encoder_outs_[i].data()),
-                          {feature_dim}, torch::kFloat)
-              .clone();
-      feats[0][cached_feature_.size() + i] = std::move(row);
-    }
-    torch::Tensor encoder_out_lens = torch::zeros({1}, torch::kLong);
-    encoder_out_lens[0] = length
+void TorchAsrModel::RnntGreedySearch(std::vector<int>* hyp) {
+  int length = encoder_outs_[encoder_outs_.size()-1].size(1);
+  auto encoder_out = encoder_outs_[encoder_outs_.size()-1];
+  
+  torch::Tensor encoder_out_lens = torch::zeros({1}, torch::kLong);
+  encoder_out_lens[0] = static_cast<int64_t>(length);
+
+  #ifdef USE_GPU
+    encoder_out = encoder_out.to(at::kCUDA);
+    encoder_out_lens = encoder_out_lens.to(at::kCUDA);
+  #endif
+
+  auto output = model_
+              ->run_method("forward_greedy_search", encoder_out, encoder_out_lens, 64)
+              .toList();
+
+  for (int i = 0; i < output.size(); ++i) {
+    hyp->push_back(std::move(output.get(i).toInt()));
   }
+}
 
 }  // namespace wenet

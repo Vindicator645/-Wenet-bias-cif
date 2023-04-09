@@ -29,6 +29,7 @@ DEFINE_bool(output_nbest, false, "output n-best of decode result");
 DEFINE_string(wav_path, "", "single wave path");
 DEFINE_string(wav_scp, "", "input wav scp");
 DEFINE_string(result, "", "result output file");
+// DEFINE_string(method, "rnnt_greedy", "decode_method");
 DEFINE_bool(continuous_decoding, false, "continuous decoding mode");
 DEFINE_int32(thread_num, 1, "num of decode thread");
 
@@ -42,9 +43,15 @@ int g_total_waves_dur = 0;
 int g_total_decode_time = 0;
 
 void decode(std::pair<std::string, std::string> wav) {
+  bool do_rescore = true;
+  if (FLAGS_method == "rnnt_greedy") {
+    do_rescore = false;
+  }
+
   wenet::WavReader wav_reader(wav.second);
   int num_samples = wav_reader.num_samples();
-  CHECK_EQ(wav_reader.sample_rate(), FLAGS_sample_rate);
+  LOG(INFO) << "wav samples: " << num_samples;
+  // CHECK_EQ(wav_reader.sample_rate(), FLAGS_sample_rate);
 
   auto feature_pipeline =
       std::make_shared<wenet::FeaturePipeline>(*g_feature_config);
@@ -52,18 +59,25 @@ void decode(std::pair<std::string, std::string> wav) {
   feature_pipeline->set_input_finished();
   LOG(INFO) << "num frames " << feature_pipeline->num_frames();
 
+  // LOG(INFO) << "start initing deocer";
   wenet::AsrDecoder decoder(feature_pipeline, g_decode_resource,
                             *g_decode_config);
+  // LOG(INFO) << "init_deocer";
 
   int wave_dur = static_cast<int>(static_cast<float>(num_samples) /
                                   wav_reader.sample_rate() * 1000);
+  // LOG(INFO) << "wave_dur: " << wave_dur;
+
   int decode_time = 0;
   std::string final_result;
+  // LOG(INFO) << "start decoding";
   while (true) {
     wenet::Timer timer;
     wenet::DecodeState state = decoder.Decode();
     if (state == wenet::DecodeState::kEndFeats) {
-      decoder.Rescoring();
+      if (do_rescore){
+         decoder.Rescoring();
+      }
     }
     int chunk_decode_time = timer.Elapsed();
     decode_time += chunk_decode_time;
@@ -73,7 +87,9 @@ void decode(std::pair<std::string, std::string> wav) {
 
     if (FLAGS_continuous_decoding && state == wenet::DecodeState::kEndpoint) {
       if (decoder.DecodedSomething()) {
-        decoder.Rescoring();
+        if (do_rescore){
+          decoder.Rescoring();
+        }
         LOG(INFO) << "Final result (continuous decoding): "
                   << decoder.result()[0].sentence;
         final_result.append(decoder.result()[0].sentence);
@@ -150,11 +166,14 @@ int main(int argc, char* argv[]) {
     g_result.open(FLAGS_result, std::ios::out);
   }
 
-  {
-    ThreadPool pool(FLAGS_thread_num);
-    for (auto& wav : waves) {
-      pool.enqueue(decode, wav);
-    }
+  // {
+  //   ThreadPool pool(FLAGS_thread_num);
+  //   for (auto& wav : waves) {
+  //     pool.enqueue(decode, wav);
+  //   }
+  // }
+  for (auto& wav : waves) {
+    decode(wav);
   }
 
   LOG(INFO) << "Total: decoded " << g_total_waves_dur << "ms audio taken "

@@ -197,4 +197,6 @@ void CtcWfstBeamSearch::RemoveContinuousTags(std::vector<int>* output) {
   }
 }
 
+void CtcWfstBeamSearch::Search(const std::vector<int>& hpy) {};
+
 }  // namespace wenet

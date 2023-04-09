@@ -44,9 +44,7 @@ class TorchAsrModel : public AsrModel {
   void AttentionRescoring(const std::vector<std::vector<int>>& hyps,
                           float reverse_weight,
                           std::vector<float>* rescoring_score) override;
-  void RnntGreedySearch(const std::vector<std::vector<std::vector<float>>>& encoder_out,
-                        const std::vector<int>& encoder_out_lens,
-                        std::vector<int>* out_prob)
+  void RnntGreedySearch(std::vector<int>* hyp) override;
   std::shared_ptr<AsrModel> Copy() const override;
 
  protected:

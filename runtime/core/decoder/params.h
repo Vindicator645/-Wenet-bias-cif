@@ -70,6 +70,7 @@ DEFINE_double(length_penalty, 0.0, "length penalty ctc wfst search, will not"
               "apply on self-loop arc, for balancing the del/ins ratio, "
               "suggest set to -3.0");
 DEFINE_int32(nbest, 10, "nbest for ctc wfst or prefix search");
+DEFINE_string(method, "rnnt_greedy", "decode method");
 
 // SymbolTable flags
 DEFINE_string(dict_path, "",
@@ -103,6 +104,7 @@ std::shared_ptr<DecodeOptions> InitDecodeOptionsFromFlags() {
   decode_config->ctc_weight = FLAGS_ctc_weight;
   decode_config->reverse_weight = FLAGS_reverse_weight;
   decode_config->rescoring_weight = FLAGS_rescoring_weight;
+  decode_config->method = FLAGS_method;
   decode_config->ctc_wfst_search_opts.max_active = FLAGS_max_active;
   decode_config->ctc_wfst_search_opts.min_active = FLAGS_min_active;
   decode_config->ctc_wfst_search_opts.beam = FLAGS_beam;

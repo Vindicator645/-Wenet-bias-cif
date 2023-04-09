@@ -232,4 +232,6 @@ void CtcPrefixBeamSearch::UpdateFinalContext() {
   UpdateHypotheses(arr);
 }
 
+void CtcPrefixBeamSearch::Search(const std::vector<int>& hpy) {};
+
 }  // namespace wenet

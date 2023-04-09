@@ -23,12 +23,14 @@ namespace wenet {
 enum SearchType {
   kPrefixBeamSearch = 0x00,
   kWfstBeamSearch = 0x01,
+  rnntGreedySearch = 0x02,
 };
 
 class SearchInterface {
  public:
   virtual ~SearchInterface() {}
   virtual void Search(const std::vector<std::vector<float>>& logp) = 0;
+  virtual void Search(const std::vector<int>& hyp) = 0;
   virtual void Reset() = 0;
   virtual void FinalizeSearch() = 0;
 

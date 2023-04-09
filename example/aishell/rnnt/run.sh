@@ -170,7 +170,7 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
   # Please specify decoding_chunk_size for unified streaming and
   # non-streaming model. The default value is -1, which is full chunk
   # for non-streaming inference.
-  decoding_chunk_size=
+  decoding_chunk_size=16
   ctc_weight=0.5
   reverse_weight=0.0
   for mode in ${decode_modes}; do
